@@ -246,7 +246,9 @@ async function load(){
   __loadCtrl = new AbortController();
   let data = null;
   try{
-    const r = await fetch('/board.php', { headers:{'Content-Type':'application/json'}, signal: __loadCtrl.signal });
+    const tok = (state.session && state.session.token) || localStorage.getItem('token') || '';
+    const url = tok ? ('/board.php?token=' + encodeURIComponent(tok)) : '/board.php';
+    const r = await fetch(url, { headers:{'Content-Type':'application/json'}, signal: __loadCtrl.signal });
     if (!r.ok) throw new Error(await r.text());
     data = await r.json();
   }catch(e){
