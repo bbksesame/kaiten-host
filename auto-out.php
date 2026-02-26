@@ -24,22 +24,11 @@ function msk_date_str() {
 }
 
 $body  = read_json_body();
-$force = !empty($body['force']) || (isset($_GET['force']) && $_GET['force'] === '1');
 $actorName = isset($body['actor']) ? trim((string)$body['actor']) : '';
 if ($actorName === '') $actorName = 'auto-out';
 if (strlen($actorName) > 64) $actorName = substr($actorName, 0, 64);
 
-$allowedTimes = ['17:02','18:02','19:02','20:02','21:02','22:02','23:02','23:59'];
 $nowHm = msk_now_hm();
-if (!$force && !in_array($nowHm, $allowedTimes, true)) {
-    echo json_encode([
-        'ok' => true,
-        'skipped' => true,
-        'reason' => 'NOT_SCHEDULED_TIME',
-        'now' => $nowHm
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
 
 // Select operators with a shift end time and not already in "Выходной"
 $res = $mysqli->query("SELECT * FROM operators WHERE shiftEnd IS NOT NULL AND shiftEnd <> '00:00:00' AND status <> 'Выходной'");
@@ -153,6 +142,5 @@ echo json_encode([
     'ok' => true,
     'moved' => $moved,
     'checked' => $checked,
-    'now' => $nowHm,
-    'force' => $force
+    'now' => $nowHm
 ], JSON_UNESCAPED_UNICODE);
