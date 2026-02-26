@@ -11,23 +11,6 @@ function read_json_body() {
     return is_array($data) ? $data : [];
 }
 
-function require_session(mysqli $db, $token) {
-    if (!$token) return null;
-    $stmt = $db->prepare(
-        'SELECT token,operatorId,role,displayName,expiresIso FROM sessions WHERE token=?'
-    );
-    $stmt->bind_param('s', $token);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    $s = $res->fetch_assoc();
-    if (!$s) return null;
-    if (!empty($s['expiresIso'])) {
-        $expires = strtotime($s['expiresIso']);
-        if ($expires !== false && $expires < time()) return null;
-    }
-    return $s;
-}
-
 function msk_now_hm() {
     return gmdate('H:i', time() + 3 * 3600);
 }
@@ -41,18 +24,10 @@ function msk_date_str() {
 }
 
 $body  = read_json_body();
-$token = isset($body['token']) ? trim((string)$body['token']) : '';
-if ($token === '' && isset($_GET['token'])) {
-    $token = trim((string)$_GET['token']);
-}
 $force = !empty($body['force']) || (isset($_GET['force']) && $_GET['force'] === '1');
-
-$sess = require_session($mysqli, $token);
-if (!$sess || (($sess['role'] ?? '') !== 'admin')) {
-    http_response_code(403);
-    echo json_encode(['ok' => false, 'error' => 'FORBIDDEN'], JSON_UNESCAPED_UNICODE);
-    exit;
-}
+$actorName = isset($body['actor']) ? trim((string)$body['actor']) : '';
+if ($actorName === '') $actorName = 'auto-out';
+if (strlen($actorName) > 64) $actorName = substr($actorName, 0, 64);
 
 $allowedTimes = ['17:02','18:02','19:02','20:02','21:02','22:02','23:02','23:59'];
 $nowHm = msk_now_hm();
@@ -88,8 +63,6 @@ $TOTAL_KEYS = [
 
 $nowIso = msk_now_iso();
 $today  = msk_date_str();
-$actorName = $sess['displayName'] ?: $sess['operatorId'];
-
 $moved = 0;
 $checked = 0;
 

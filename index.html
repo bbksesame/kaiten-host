@@ -701,7 +701,8 @@ document.getElementById('btnNewDay').onclick = async ()=>{
 document.getElementById('btnAutoOut').onclick = async ()=>{
   if (!state.session) return;
   try{
-    const res = await api('/auto-out.php',{method:'POST',body:JSON.stringify({token:state.session.token, force:true})});
+    const actor = state.session.displayName || state.session.operatorId || 'admin';
+    const res = await api('/auto-out.php',{method:'POST',body:JSON.stringify({force:true, actor})});
     const moved = res?.moved ?? 0;
     const checked = res?.checked ?? 0;
     alert(`Авто-выход: проверено ${checked}, переведено ${moved}`);
