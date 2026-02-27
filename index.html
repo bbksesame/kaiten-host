@@ -118,7 +118,7 @@
     <button id="btnTheme" class="btn-chip" title="Переключить тему">Тема: тёмная</button>
     <button id="btnNewDay" class="btn-chip hidden">Новый день</button>
     <button id="btnReports" class="btn-chip hidden">Отчёты</button>
-    <button id="btnAutoOut" class="btn-chip hidden">Авто-выход</button>
+    <button id="btnRating" class="btn-chip">Рейтинг</button>
 
     <!-- Кнопка ПРОГНОЗ в правом верхнем углу -->
     <button id="k-forecast-btn" class="btn-chip">Прогноз</button>
@@ -210,7 +210,8 @@ function applySession(sess){
   const isAdmin = sess?.role==='admin';
   document.getElementById('btnNewDay').classList.toggle('hidden', !isAdmin);
   document.getElementById('btnReports').classList.toggle('hidden', !isAdmin);
-  document.getElementById('btnAutoOut').classList.toggle('hidden', !isAdmin);
+  const btnAutoOut = document.getElementById('btnAutoOut');
+  if (btnAutoOut) btnAutoOut.classList.toggle('hidden', !isAdmin);
 }
 async function restoreSession(){
   const token = localStorage.getItem('token');
@@ -692,25 +693,31 @@ function fillRepTable(rows){
 
 // ============ Buttons & Page switch ============
 document.getElementById('btnReports').onclick = ()=> switchPage(state.page==='reports'?'board':'reports');
+document.getElementById('btnRating').onclick = ()=>{
+  window.open('https://docs.google.com/spreadsheets/d/1XwQy-X4tD4LIByzR9Bisqj0wDJSD1O_pLwIu7UMAdMY/edit?usp=sharing', '_blank', 'noopener');
+};
 document.getElementById('btnNewDay').onclick = async ()=>{
   if (!state.session) return;
   if (!confirm('Начать новый день? Всех переведёт в «Выходной», обнулит итоги и старт смены.')) return;
   const actor = state.session.displayName || state.session.operatorId;
   try{ await api('/api/newDay',{method:'POST',body:JSON.stringify({token:state.session.token, actor})}); await fullReload(); }catch(e){ alert('Нет прав'); }
 };
-document.getElementById('btnAutoOut').onclick = async ()=>{
-  if (!state.session) return;
-  try{
-    const actor = state.session.displayName || state.session.operatorId || 'admin';
-    const res = await api('/auto-out.php',{method:'POST',body:JSON.stringify({force:true, actor})});
-    const moved = res?.moved ?? 0;
-    const checked = res?.checked ?? 0;
-    alert(`Авто-выход: проверено ${checked}, переведено ${moved}`);
-    await fullReload();
-  }catch(e){
-    alert('Не удалось выполнить авто-выход');
-  }
-};
+const btnAutoOut = document.getElementById('btnAutoOut');
+if (btnAutoOut) {
+  btnAutoOut.onclick = async ()=>{
+    if (!state.session) return;
+    try{
+      const actor = state.session.displayName || state.session.operatorId || 'admin';
+      const res = await api('/auto-out.php',{method:'POST',body:JSON.stringify({force:true, actor})});
+      const moved = res?.moved ?? 0;
+      const checked = res?.checked ?? 0;
+      alert(`Авто-выход: проверено ${checked}, переведено ${moved}`);
+      await fullReload();
+    }catch(e){
+      alert('Не удалось выполнить авто-выход');
+    }
+  };
+}
 function switchPage(page){
   state.page=page; const isRep=page==='reports';
   document.getElementById('summary').classList.toggle('hidden',isRep);
